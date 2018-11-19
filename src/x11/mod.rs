@@ -1,9 +1,9 @@
-extern crate xcb;
 extern crate helper_macro;
+extern crate xcb;
 
 use super::*;
-use log::*;
 use helper_macro::match_event;
+use log::*;
 
 pub struct X11Application {
     connection: xcb::Connection,
@@ -100,7 +100,16 @@ impl Application for X11Application {
     fn main_loop(&mut self) {
         loop {
             let event = self.connection.wait_for_event();
-            match_event!(EXPOSE, KEY_PRESS, KEY_RELEASE, BUTTON_PRESS, BUTTON_RELEASE, MOTION_NOTIFY, ENTER_NOTIFY, LEAVE_NOTIFY);
+            match_event!(
+                EXPOSE,
+                KEY_PRESS,
+                KEY_RELEASE,
+                BUTTON_PRESS,
+                BUTTON_RELEASE,
+                MOTION_NOTIFY,
+                ENTER_NOTIFY,
+                LEAVE_NOTIFY
+            );
         }
     }
     fn get_window(&mut self, id: u32) -> &X11Window {
