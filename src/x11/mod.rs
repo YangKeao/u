@@ -1,5 +1,6 @@
 extern crate xcb;
 
+use super::*;
 use log::*;
 
 pub struct X11Application {
@@ -19,7 +20,7 @@ impl X11Application {
     }
 }
 
-impl super::Application for X11Application {
+impl Application for X11Application {
     type Window = X11Window;
     type WindowIdentifier = u32;
     fn new() -> Self {
@@ -105,50 +106,48 @@ impl super::Application for X11Application {
                     let r = event.response_type() & !0x80;
                     match r {
                         xcb::EXPOSE => {
-                            self.trigger_event(super::Event::Expose(super::Expose {}));
+                            self.trigger_event(Event::Expose(Expose {}));
                         }
                         xcb::KEY_PRESS => {
                             let key_press: &xcb::KeyPressEvent = unsafe { xcb::cast_event(&event) };
                             trace!("Key '{}' pressed", key_press.detail());
-                            self.trigger_event(super::Event::KeyPress(super::KeyPress {}));
+                            self.trigger_event(Event::KeyPress(KeyPress {}));
                         }
                         xcb::KEY_RELEASE => {
                             let key_release: &xcb::KeyReleaseEvent =
                                 unsafe { xcb::cast_event(&event) };
                             trace!("Key '{}' released", key_release.detail());
-                            self.trigger_event(super::Event::KeyRelease(super::KeyRelease {}));
+                            self.trigger_event(Event::KeyRelease(KeyRelease {}));
                         }
                         xcb::BUTTON_PRESS => {
                             let button_press: &xcb::ButtonPressEvent =
                                 unsafe { xcb::cast_event(&event) };
                             trace!("Button '{}' pressed", button_press.detail());
-                            self.trigger_event(super::Event::ButtonPress(super::ButtonPress {}));
+                            self.trigger_event(Event::ButtonPress(ButtonPress {}));
                         }
                         xcb::BUTTON_RELEASE => {
                             let button_release: &xcb::ButtonPressEvent =
                                 unsafe { xcb::cast_event(&event) };
                             trace!("Button '{}' released", button_release.detail());
-                            self.trigger_event(super::Event::ButtonRelease(
-                                super::ButtonRelease {},
-                            ));
+                            self.trigger_event(Event::ButtonRelease(ButtonRelease {}));
                         }
                         xcb::MOTION_NOTIFY => {
                             let motion: &xcb::MotionNotifyEvent =
                                 unsafe { xcb::cast_event(&event) };
                             trace!("Move to x:'{}', y:'{}'", motion.event_x(), motion.event_y());
-                            self.trigger_event(super::Event::MotionNotify(super::MotionNotify {}));
+                            self.trigger_event(Event::MotionNotify(MotionNotify {}));
                         }
                         xcb::ENTER_NOTIFY => {
                             let enter_event: &xcb::EnterNotifyEvent =
                                 unsafe { xcb::cast_event(&event) };
                             trace!("Enter Window '{}'", enter_event.event());
-                            self.trigger_event(super::Event::EnterNotify(super::EnterNotify {}));
+                            self.trigger_event(Event::EnterNotify(EnterNotify {}));
                         }
                         xcb::LEAVE_NOTIFY => {
                             let leave_event: &xcb::LeaveNotifyEvent =
                                 unsafe { xcb::cast_event(&event) };
                             trace!("Leave Window '{}'", leave_event.event());
-                            self.trigger_event(super::Event::LeaveNotify(super::LeaveNotify {}));
+                            self.trigger_event(Event::LeaveNotify(LeaveNotify {}));
                         }
                         _ => {}
                     }
@@ -164,15 +163,15 @@ impl super::Application for X11Application {
     }
     fn add_event_listener<F>(&mut self, handler: F)
     where
-        F: (Fn(super::Event) -> ()),
+        F: (Fn(Event) -> ()),
     {
     }
-    fn trigger_event(&mut self, event: super::Event) {}
+    fn trigger_event(&mut self, event: Event) {}
 }
 
-impl super::Window for X11Window {
+impl Window for X11Window {
     type Application = X11Application;
-    fn poly_point(&mut self, application: &X11Application, points: &[super::Point]) {
+    fn poly_point(&mut self, application: &X11Application, points: &[Point]) {
         for point in points {
             xcb::poly_point(
                 application.borrow_connection(),
