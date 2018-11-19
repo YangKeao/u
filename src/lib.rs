@@ -9,22 +9,31 @@ pub enum Backend {
     WAYLAND,
 }
 
+#[derive(Copy, Clone)]
 pub struct Expose {}
 
+#[derive(Copy, Clone)]
 pub struct KeyPress {}
 
+#[derive(Copy, Clone)]
 pub struct KeyRelease {}
 
+#[derive(Copy, Clone)]
 pub struct ButtonPress {}
 
+#[derive(Copy, Clone)]
 pub struct ButtonRelease {}
 
+#[derive(Copy, Clone)]
 pub struct MotionNotify {}
 
+#[derive(Copy, Clone)]
 pub struct EnterNotify {}
 
+#[derive(Copy, Clone)]
 pub struct LeaveNotify {}
 
+#[derive(Copy, Clone)]
 pub enum Event {
     Expose(Expose),
     KeyPress(KeyPress),

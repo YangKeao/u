@@ -33,7 +33,7 @@ impl Application for X11Application {
             connection,
             screen_num,
             windows: std::collections::HashMap::new(),
-            event_listeners: vec!(),
+            event_listeners: vec![],
         };
     }
     fn create_window(&mut self, width: u16, height: u16) -> u32 {
@@ -121,19 +121,21 @@ impl Application for X11Application {
         self.connection.flush()
     }
 
-    fn add_event_listener(&mut self, handler: Box<Fn(Event) -> ()>)
-    {
+    fn add_event_listener(&mut self, handler: Box<Fn(Event) -> ()>) {
         self.event_listeners.push(handler)
     }
 
-    // TODO: Some redundant codes for impl this function. Maybe I need a macro.
-    fn trigger_event(&mut self, event: Event) {}
+    fn trigger_event(&mut self, event: Event) {
+        for handler in self.event_listeners.iter() {
+            handler(event);
+        }
+    }
 }
 
 impl Window for X11Window {
     type Application = X11Application;
     fn poly_point(&mut self, application: &X11Application, points: &[Point]) {
-        for point in points {
+        for point in points.iter() {
             xcb::poly_point(
                 application.borrow_connection(),
                 xcb::COORD_MODE_ORIGIN as u8,
