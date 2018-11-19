@@ -3,16 +3,8 @@ name = "u"
 version = "0.1.0"
 authors = ["Yang Keao <keao.yang@yahoo.com>"]
 edition = "2018"
-build = "src/build.rs"
 
 [dependencies]
-chrono = "0.4"
-libc = "0.2"
+xcb = "0.8"
 log = "0.4"
-
-[build-dependencies]
-cbindgen = "0.6.7"
-
-[lib]
-name = "schatten"
-crate-type = ["dylib"]
+env_logger = "0.6.0"

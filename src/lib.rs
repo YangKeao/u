@@ -1,50 +1,133 @@
-extern crate chrono;
-extern crate libc;
+extern crate xcb;
+extern crate log;
+extern crate env_logger;
 
-use std::ffi::CString;
-use std::cell::RefCell;
+use log::*;
 
-mod core;
-
-thread_local! {
-    static U_CORE: RefCell<core::UCore> = RefCell::new(core::UCore::new());
+pub struct Application {
+    connection: xcb::Connection,
+    screen_num: i32,
+    windows: Vec<Window>,
 }
 
-#[no_mangle]
-pub extern fn schatten_process_key(key_val: u8, modifiers: u8) {
-    U_CORE.with(|u_core: &RefCell<core::UCore>| {
-        u_core.borrow_mut().process_key(key_val, modifiers);
-    })
+pub struct Window {
+    id: u32,
+    foreground: u32,
 }
 
-#[no_mangle]
-pub extern fn schatten_get_pre_edit() -> *mut libc::c_char {
-    U_CORE.with(|u_core: &RefCell<core::UCore>| {
-        let pre_edit = u_core.borrow().render_pre_edit();
-        let c_str_pre_edit = CString::new(pre_edit).unwrap();
-        c_str_pre_edit.into_raw()
-    })
+pub fn init() {
+    env_logger::init();
 }
 
-#[no_mangle]
-pub extern fn schatten_get_whether_hide() -> u8 {
-    U_CORE.with(|u_core: &RefCell<core::UCore>| {
-        u_core.borrow().get_hide() as u8
-    })
+pub fn create_application() -> Application {
+    let (connection, screen_num) = xcb::Connection::connect(None).unwrap();
+
+    return Application {
+        connection,
+        screen_num,
+        windows: vec!()
+    }
 }
 
-#[no_mangle]
-pub extern fn schatten_get_whether_should_commit() -> u8 {
-    U_CORE.with(|u_core: &RefCell<core::UCore>| {
-        u_core.borrow().should_commit() as u8
-    })
-}
+impl Application {
+    pub fn create_window(&mut self, width: u16, height: u16) {
+        let setup = self.connection.get_setup();
+        let screen = setup.roots().nth(self.screen_num as usize).unwrap();
 
-#[no_mangle]
-pub extern fn schatten_commit() -> *mut libc::c_char {
-    U_CORE.with(|u_core: &RefCell<core::UCore>| {
-        let commit_msg = u_core.borrow_mut().commit();
-        let c_str_commit_msg = CString::new(commit_msg).unwrap();
-        c_str_commit_msg.into_raw()
-    })
+        let foreground = self.connection.generate_id();
+        xcb::create_gc(&self.connection, foreground, screen.root(), &[
+            (xcb::GC_FOREGROUND, screen.black_pixel()),
+            (xcb::GC_GRAPHICS_EXPOSURES, 0),
+        ]);
+
+        let window_id = self.connection.generate_id();
+        xcb::create_window(&self.connection,
+            xcb::COPY_FROM_PARENT as u8,
+            window_id,
+            screen.root(),
+            0, 0,
+            width, height,
+            0,
+            xcb::WINDOW_CLASS_INPUT_OUTPUT as u16,
+            screen.root_visual(), &[
+                (xcb::CW_BACK_PIXEL, screen.white_pixel()),
+                (xcb::CW_EVENT_MASK,
+                 xcb::EVENT_MASK_EXPOSURE |
+                 xcb::EVENT_MASK_KEY_PRESS |
+                 xcb::EVENT_MASK_KEY_RELEASE |
+                 xcb::EVENT_MASK_BUTTON_PRESS |
+                 xcb::EVENT_MASK_BUTTON_RELEASE |
+                 xcb::EVENT_MASK_POINTER_MOTION |
+                 xcb::EVENT_MASK_BUTTON_MOTION |
+                 xcb::EVENT_MASK_BUTTON_1_MOTION |
+                 xcb::EVENT_MASK_BUTTON_2_MOTION |
+                 xcb::EVENT_MASK_BUTTON_3_MOTION |
+                 xcb::EVENT_MASK_BUTTON_4_MOTION |
+                 xcb::EVENT_MASK_BUTTON_5_MOTION |
+                 xcb::EVENT_MASK_ENTER_WINDOW |
+                 xcb::EVENT_MASK_LEAVE_WINDOW),
+            ]
+        );
+        xcb::map_window(&self.connection, window_id);
+        self.connection.flush();
+
+        self.windows.push(Window {
+            id: window_id,
+            foreground,
+        })
+    }
+
+    pub fn main_loop(&self) {
+        loop {
+            let event = self.connection.wait_for_event();
+            match event {
+                None => { break; }
+                Some(event) => {
+                    let r = event.response_type() & !0x80;
+                    match r {
+                        xcb::EXPOSE => {
+                            self.connection.flush();
+                        },
+                        xcb::KEY_PRESS => {
+                            let key_press : &xcb::KeyPressEvent = unsafe {
+                                xcb::cast_event(&event)
+                            };
+                            trace!("Key '{}' pressed", key_press.detail());
+                        },
+                        xcb::KEY_RELEASE => {
+                            let key_release : &xcb::KeyReleaseEvent = unsafe {
+                                xcb::cast_event(&event)
+                            };
+                            trace!("Key '{}' released", key_release.detail());
+                        }
+                        xcb::BUTTON_PRESS => {
+                            let button_press : &xcb::ButtonPressEvent = unsafe {
+                                xcb::cast_event(&event)
+                            };
+                            trace!("Button '{}' pressed", button_press.detail());
+                        }
+                        xcb::BUTTON_RELEASE => {
+                            let button_release : &xcb::ButtonPressEvent = unsafe {
+                                xcb::cast_event(&event)
+                            };
+                            trace!("Button '{}' released", button_release.detail());
+                        }
+                        xcb::MOTION_NOTIFY => {
+                            let motion : &xcb::MotionNotifyEvent = unsafe {
+                                xcb::cast_event(&event)
+                            };
+                            trace!("Move to x:'{}', y:'{}'", motion.event_x(), motion.event_y());
+                        }
+                        xcb::ENTER_NOTIFY => {
+                            trace!("Enter Window");
+                        }
+                        xcb::LEAVE_NOTIFY => {
+                            trace!("Leave Window");
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        }
+    }
 }
