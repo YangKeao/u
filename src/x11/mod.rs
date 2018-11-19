@@ -9,6 +9,7 @@ pub struct X11Application {
     connection: xcb::Connection,
     screen_num: i32,
     windows: std::collections::HashMap<u32, X11Window>,
+    event_listeners: Vec<Box<dyn Fn(Event) -> ()>>,
 }
 
 pub struct X11Window {
@@ -32,6 +33,7 @@ impl Application for X11Application {
             connection,
             screen_num,
             windows: std::collections::HashMap::new(),
+            event_listeners: vec!(),
         };
     }
     fn create_window(&mut self, width: u16, height: u16) -> u32 {
@@ -119,11 +121,9 @@ impl Application for X11Application {
         self.connection.flush()
     }
 
-    // TODO: Some redundant codes for impl this function. Maybe I need a macro.
-    fn add_event_listener<F>(&mut self, handler: F)
-    where
-        F: (Fn(Event) -> ()),
+    fn add_event_listener(&mut self, handler: Box<Fn(Event) -> ()>)
     {
+        self.event_listeners.push(handler)
     }
 
     // TODO: Some redundant codes for impl this function. Maybe I need a macro.

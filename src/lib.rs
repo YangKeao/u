@@ -57,9 +57,7 @@ pub trait Application {
     fn main_loop(&mut self);
     fn get_window(&mut self, id: Self::WindowIdentifier) -> &Self::Window;
     fn flush(&mut self) -> bool;
-    fn add_event_listener<F>(&mut self, handler: F)
-    where
-        F: Fn(Event) -> ();
+    fn add_event_listener(&mut self, handler: Box<Fn(Event) -> ()>);
     fn trigger_event(&mut self, event: Event);
 }
 

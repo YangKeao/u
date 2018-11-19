@@ -9,6 +9,9 @@ fn main() {
     application.create_window(200, 400);
     application.create_window(200, 600);
 
+    application.add_event_listener(Box::new(|ev: u::Event| {
+
+    }));
     application.main_loop();
     return;
 }
