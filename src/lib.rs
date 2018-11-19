@@ -28,6 +28,7 @@ pub trait Application {
     fn create_window(&mut self, width: u16, height: u16) -> Self::WindowIdentifier;
     fn main_loop(&mut self);
     fn get_window(&mut self, id: Self::WindowIdentifier) -> &Self::Window;
+    fn flush(&mut self) -> bool;
 }
 
 pub struct Point {

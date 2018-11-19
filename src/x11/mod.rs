@@ -150,6 +150,9 @@ impl super::Application for X11Application {
     fn get_window(&mut self, id: u32) -> &X11Window {
         self.windows.get(&id).unwrap()
     }
+    fn flush(&mut self) -> bool {
+        self.connection.flush()
+    }
 }
 
 impl super::Window for X11Window {
