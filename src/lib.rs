@@ -68,6 +68,7 @@ impl Application {
                  xcb::EVENT_MASK_LEAVE_WINDOW),
             ]
         );
+        trace!("Create Window '{}'", window_id);
         xcb::map_window(&self.connection, window_id);
         self.connection.flush();
 
@@ -119,10 +120,16 @@ impl Application {
                             trace!("Move to x:'{}', y:'{}'", motion.event_x(), motion.event_y());
                         }
                         xcb::ENTER_NOTIFY => {
-                            trace!("Enter Window");
+                            let enter_event : &xcb::EnterNotifyEvent = unsafe {
+                                xcb::cast_event(&event)
+                            };
+                            trace!("Enter Window '{}'", enter_event.event());
                         }
                         xcb::LEAVE_NOTIFY => {
-                            trace!("Leave Window");
+                            let leave_event : &xcb::LeaveNotifyEvent = unsafe {
+                                xcb::cast_event(&event)
+                            };
+                            trace!("Leave Window '{}'", leave_event.event());
                         }
                         _ => {}
                     }
