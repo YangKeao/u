@@ -1,11 +1,11 @@
-extern crate log;
 extern crate env_logger;
+extern crate log;
 
 mod x11;
 
 pub enum Backend {
     X11,
-    WAYLAND
+    WAYLAND,
 }
 
 pub fn init() {
@@ -17,9 +17,7 @@ pub fn create_application(backend: Backend) -> impl Application {
         Backend::X11 => {
             return x11::X11Application::new();
         }
-        _ => {
-            panic!("Unsupported Backend")
-        }
+        _ => panic!("Unsupported Backend"),
     }
 }
 
