@@ -105,41 +105,50 @@ impl super::Application for X11Application {
                     let r = event.response_type() & !0x80;
                     match r {
                         xcb::EXPOSE => {
-                            self.connection.flush();
+                            self.trigger_event(super::Event::Expose(super::Expose {}));
                         }
                         xcb::KEY_PRESS => {
                             let key_press: &xcb::KeyPressEvent = unsafe { xcb::cast_event(&event) };
                             trace!("Key '{}' pressed", key_press.detail());
+                            self.trigger_event(super::Event::KeyPress(super::KeyPress {}));
                         }
                         xcb::KEY_RELEASE => {
                             let key_release: &xcb::KeyReleaseEvent =
                                 unsafe { xcb::cast_event(&event) };
                             trace!("Key '{}' released", key_release.detail());
+                            self.trigger_event(super::Event::KeyRelease(super::KeyRelease {}));
                         }
                         xcb::BUTTON_PRESS => {
                             let button_press: &xcb::ButtonPressEvent =
                                 unsafe { xcb::cast_event(&event) };
                             trace!("Button '{}' pressed", button_press.detail());
+                            self.trigger_event(super::Event::ButtonPress(super::ButtonPress {}));
                         }
                         xcb::BUTTON_RELEASE => {
                             let button_release: &xcb::ButtonPressEvent =
                                 unsafe { xcb::cast_event(&event) };
                             trace!("Button '{}' released", button_release.detail());
+                            self.trigger_event(super::Event::ButtonRelease(
+                                super::ButtonRelease {},
+                            ));
                         }
                         xcb::MOTION_NOTIFY => {
                             let motion: &xcb::MotionNotifyEvent =
                                 unsafe { xcb::cast_event(&event) };
                             trace!("Move to x:'{}', y:'{}'", motion.event_x(), motion.event_y());
+                            self.trigger_event(super::Event::MotionNotify(super::MotionNotify {}));
                         }
                         xcb::ENTER_NOTIFY => {
                             let enter_event: &xcb::EnterNotifyEvent =
                                 unsafe { xcb::cast_event(&event) };
                             trace!("Enter Window '{}'", enter_event.event());
+                            self.trigger_event(super::Event::EnterNotify(super::EnterNotify {}));
                         }
                         xcb::LEAVE_NOTIFY => {
                             let leave_event: &xcb::LeaveNotifyEvent =
                                 unsafe { xcb::cast_event(&event) };
                             trace!("Leave Window '{}'", leave_event.event());
+                            self.trigger_event(super::Event::LeaveNotify(super::LeaveNotify {}));
                         }
                         _ => {}
                     }
@@ -153,6 +162,12 @@ impl super::Application for X11Application {
     fn flush(&mut self) -> bool {
         self.connection.flush()
     }
+    fn add_event_listener<F>(&mut self, handler: F)
+    where
+        F: (Fn(super::Event) -> ()),
+    {
+    }
+    fn trigger_event(&mut self, event: super::Event) {}
 }
 
 impl super::Window for X11Window {

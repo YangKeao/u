@@ -8,6 +8,33 @@ pub enum Backend {
     WAYLAND,
 }
 
+pub struct Expose {}
+
+pub struct KeyPress {}
+
+pub struct KeyRelease {}
+
+pub struct ButtonPress {}
+
+pub struct ButtonRelease {}
+
+pub struct MotionNotify {}
+
+pub struct EnterNotify {}
+
+pub struct LeaveNotify {}
+
+pub enum Event {
+    Expose(Expose),
+    KeyPress(KeyPress),
+    KeyRelease(KeyRelease),
+    ButtonPress(ButtonPress),
+    ButtonRelease(ButtonRelease),
+    MotionNotify(MotionNotify),
+    EnterNotify(EnterNotify),
+    LeaveNotify(LeaveNotify),
+}
+
 pub fn init() {
     env_logger::init();
 }
@@ -29,6 +56,10 @@ pub trait Application {
     fn main_loop(&mut self);
     fn get_window(&mut self, id: Self::WindowIdentifier) -> &Self::Window;
     fn flush(&mut self) -> bool;
+    fn add_event_listener<F>(&mut self, handler: F)
+    where
+        F: Fn(Event) -> ();
+    fn trigger_event(&mut self, event: Event);
 }
 
 pub struct Point {
