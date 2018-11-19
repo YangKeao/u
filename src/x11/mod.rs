@@ -101,7 +101,6 @@ impl Application for X11Application {
     }
     fn main_loop(&mut self) {
         loop {
-            let event = self.connection.wait_for_event();
             match_event!(
                 EXPOSE,
                 KEY_PRESS,

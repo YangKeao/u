@@ -7,6 +7,7 @@ use heck::*;
 #[proc_macro]
 pub fn match_event(items: TokenStream) -> TokenStream {
     let mut event_match = r#"
+        let event = self.connection.wait_for_event();
         match event {
             None => {
                 break;
