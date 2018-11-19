@@ -1,7 +1,9 @@
 extern crate xcb;
+extern crate helper_macro;
 
 use super::*;
 use log::*;
+use helper_macro::match_event;
 
 pub struct X11Application {
     connection: xcb::Connection,
@@ -98,61 +100,7 @@ impl Application for X11Application {
     fn main_loop(&mut self) {
         loop {
             let event = self.connection.wait_for_event();
-            match event {
-                None => {
-                    break;
-                }
-                Some(event) => {
-                    let r = event.response_type() & !0x80;
-                    match r {
-                        xcb::EXPOSE => {
-                            self.trigger_event(Event::Expose(Expose {}));
-                        }
-                        xcb::KEY_PRESS => {
-                            let key_press: &xcb::KeyPressEvent = unsafe { xcb::cast_event(&event) };
-                            trace!("Key '{}' pressed", key_press.detail());
-                            self.trigger_event(Event::KeyPress(KeyPress {}));
-                        }
-                        xcb::KEY_RELEASE => {
-                            let key_release: &xcb::KeyReleaseEvent =
-                                unsafe { xcb::cast_event(&event) };
-                            trace!("Key '{}' released", key_release.detail());
-                            self.trigger_event(Event::KeyRelease(KeyRelease {}));
-                        }
-                        xcb::BUTTON_PRESS => {
-                            let button_press: &xcb::ButtonPressEvent =
-                                unsafe { xcb::cast_event(&event) };
-                            trace!("Button '{}' pressed", button_press.detail());
-                            self.trigger_event(Event::ButtonPress(ButtonPress {}));
-                        }
-                        xcb::BUTTON_RELEASE => {
-                            let button_release: &xcb::ButtonPressEvent =
-                                unsafe { xcb::cast_event(&event) };
-                            trace!("Button '{}' released", button_release.detail());
-                            self.trigger_event(Event::ButtonRelease(ButtonRelease {}));
-                        }
-                        xcb::MOTION_NOTIFY => {
-                            let motion: &xcb::MotionNotifyEvent =
-                                unsafe { xcb::cast_event(&event) };
-                            trace!("Move to x:'{}', y:'{}'", motion.event_x(), motion.event_y());
-                            self.trigger_event(Event::MotionNotify(MotionNotify {}));
-                        }
-                        xcb::ENTER_NOTIFY => {
-                            let enter_event: &xcb::EnterNotifyEvent =
-                                unsafe { xcb::cast_event(&event) };
-                            trace!("Enter Window '{}'", enter_event.event());
-                            self.trigger_event(Event::EnterNotify(EnterNotify {}));
-                        }
-                        xcb::LEAVE_NOTIFY => {
-                            let leave_event: &xcb::LeaveNotifyEvent =
-                                unsafe { xcb::cast_event(&event) };
-                            trace!("Leave Window '{}'", leave_event.event());
-                            self.trigger_event(Event::LeaveNotify(LeaveNotify {}));
-                        }
-                        _ => {}
-                    }
-                }
-            }
+            match_event!(EXPOSE, KEY_PRESS, KEY_RELEASE, BUTTON_PRESS, BUTTON_RELEASE, MOTION_NOTIFY, ENTER_NOTIFY, LEAVE_NOTIFY);
         }
     }
     fn get_window(&mut self, id: u32) -> &X11Window {
@@ -161,11 +109,15 @@ impl Application for X11Application {
     fn flush(&mut self) -> bool {
         self.connection.flush()
     }
+
+    // TODO: Some redundant codes for impl this function. Maybe I need a macro.
     fn add_event_listener<F>(&mut self, handler: F)
     where
         F: (Fn(Event) -> ()),
     {
     }
+
+    // TODO: Some redundant codes for impl this function. Maybe I need a macro.
     fn trigger_event(&mut self, event: Event) {}
 }
 

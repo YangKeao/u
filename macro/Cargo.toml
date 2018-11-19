@@ -1,11 +1,13 @@
 [package]
-name = "u"
+name = "helper_macro"
 version = "0.1.0"
 authors = ["Yang Keao <keao.yang@yahoo.com>"]
 edition = "2018"
 
 [dependencies]
-xcb = "0.8"
-log = "0.4"
-env_logger = "0.6.0"
-helper_macro = { path="macro" }
+syn = "0.15"
+quote = "0.6"
+heck = "0.3.0"
+
+[lib]
+proc-macro = true

@@ -1,3 +1,4 @@
+#![feature(proc_macro_hygiene)]
 extern crate env_logger;
 extern crate log;
 
