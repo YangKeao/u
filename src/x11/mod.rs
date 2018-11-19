@@ -6,7 +6,6 @@ pub struct X11Application {
     connection: xcb::Connection,
     screen_num: i32,
     windows: std::collections::HashMap<u32, X11Window>,
-
 }
 
 pub struct X11Window {
@@ -154,11 +153,16 @@ impl super::Application for X11Application {
 }
 
 impl super::Window for X11Window {
-    type Application=X11Application;
+    type Application = X11Application;
     fn poly_point(&mut self, application: &X11Application, points: &[super::Point]) {
         for point in points {
-            xcb::poly_point(application.borrow_connection(), xcb::COORD_MODE_ORIGIN as u8, self.id,
-                            self.foreground, &[xcb::Point::new(point.x, point.y)]);
+            xcb::poly_point(
+                application.borrow_connection(),
+                xcb::COORD_MODE_ORIGIN as u8,
+                self.id,
+                self.foreground,
+                &[xcb::Point::new(point.x, point.y)],
+            );
         }
     }
 }
