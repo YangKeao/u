@@ -2,7 +2,6 @@ extern crate helper_macro;
 extern crate xcb;
 
 use super::*;
-use helper_macro::match_event;
 use log::*;
 
 pub struct X11Application {
