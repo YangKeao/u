@@ -141,7 +141,9 @@ impl Application for X11Application {
                             self.trigger_event(Event::LeaveNotify(LeaveNotify {}));
                             trace!("Event LEAVE_NOTIFY triggered");
                         }
-                        _ => {}
+                        _ => {
+                            warn!("Unhandled Event");
+                        }
                     }
                 }
             }
