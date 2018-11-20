@@ -86,6 +86,14 @@ impl Application for X11Application {
             ],
         );
         trace!("Create Window '{}'", window_id);
+
+        let cookie = xcb::intern_atom(&self.connection, true, "WM_PROTOCOLS");
+        let reply = cookie.get_reply().unwrap();
+
+        let cookie_for_delete = xcb::intern_atom(&self.connection, true, "WM_DELETE_WINDOW");
+        let reply_for_delete = cookie_for_delete.get_reply().unwrap();
+
+        xcb::change_property(&self.connection, xcb::PROP_MODE_REPLACE as u8, window_id, reply.atom(), 4, 32, &[reply_for_delete.atom()]);
         xcb::map_window(&self.connection, window_id);
 
         self.windows.borrow_mut().insert(
@@ -104,7 +112,7 @@ impl Application for X11Application {
             let event = self.connection.wait_for_event();
             match event {
                 None => {
-                    break;
+                    warn!("None Event received");
                 }
                 Some(event) => {
                     let r = event.response_type() & !0x80;
@@ -140,6 +148,9 @@ impl Application for X11Application {
                         xcb::LEAVE_NOTIFY => {
                             self.trigger_event(Event::LeaveNotify(LeaveNotify {}));
                             trace!("Event LEAVE_NOTIFY triggered");
+                        }
+                        xcb::CLIENT_MESSAGE => {
+                            warn!("Handle Client Message");
                         }
                         _ => {
                             warn!("Unhandled Event");
