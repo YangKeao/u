@@ -101,16 +101,50 @@ impl Application for X11Application {
     }
     fn main_loop(&mut self) {
         loop {
-            match_event!(
-                EXPOSE,
-                KEY_PRESS,
-                KEY_RELEASE,
-                BUTTON_PRESS,
-                BUTTON_RELEASE,
-                MOTION_NOTIFY,
-                ENTER_NOTIFY,
-                LEAVE_NOTIFY
-            );
+            let event = self.connection.wait_for_event();
+            match event {
+                None => {
+                    break;
+                }
+                Some(event) => {
+                    let r = event.response_type() & !0x80;
+                    match r {
+                        xcb::EXPOSE => {
+                            self.trigger_event(Event::Expose(Expose {}));
+                            trace!("Event EXPOSE triggered");
+                        }
+                        xcb::KEY_PRESS => {
+                            self.trigger_event(Event::KeyPress(KeyPress {}));
+                            trace!("Event KEY_PRESS triggered");
+                        }
+                        xcb::KEY_RELEASE => {
+                            self.trigger_event(Event::KeyRelease(KeyRelease {}));
+                            trace!("Event KEY_RELEASE triggered");
+                        }
+                        xcb::BUTTON_PRESS => {
+                            self.trigger_event(Event::ButtonPress(ButtonPress {}));
+                            trace!("Event BUTTON_PRESS triggered");
+                        }
+                        xcb::BUTTON_RELEASE => {
+                            self.trigger_event(Event::ButtonRelease(ButtonRelease {}));
+                            trace!("Event BUTTON_RELEASE triggered");
+                        }
+                        xcb::MOTION_NOTIFY => {
+                            self.trigger_event(Event::MotionNotify(MotionNotify {}));
+                            trace!("Event MOTION_NOTIFY triggered");
+                        }
+                        xcb::ENTER_NOTIFY => {
+                            self.trigger_event(Event::EnterNotify(EnterNotify {}));
+                            trace!("Event ENTER_NOTIFY triggered");
+                        }
+                        xcb::LEAVE_NOTIFY => {
+                            self.trigger_event(Event::LeaveNotify(LeaveNotify {}));
+                            trace!("Event LEAVE_NOTIFY triggered");
+                        }
+                        _ => {}
+                    }
+                }
+            }
         }
     }
     fn get_window(&mut self, id: u32) -> &X11Window {
