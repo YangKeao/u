@@ -62,12 +62,12 @@ pub trait Application {
     type Window: Window;
     type WindowIdentifier;
     fn new() -> Self;
-    fn create_window(&mut self, width: u16, height: u16) -> Self::WindowIdentifier;
-    fn main_loop(&mut self);
-    fn get_window(&mut self, id: Self::WindowIdentifier) -> &Self::Window;
-    fn flush(&mut self) -> bool;
-    fn add_event_listener(&mut self, handler: Box<Fn(Event) -> ()>);
-    fn trigger_event(&mut self, event: Event);
+    fn create_window(&self, width: u16, height: u16) -> Self::WindowIdentifier;
+    fn main_loop(&self);
+    fn get_window(&self, id: Self::WindowIdentifier) -> Self::Window;
+    fn flush(&self) -> bool;
+    fn add_event_listener(&self, handler: Box<Fn(&Self, Event) -> ()>);
+    fn trigger_event(&self, event: Event);
 }
 
 pub struct Point {

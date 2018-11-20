@@ -7,10 +7,11 @@ use log::*;
 pub struct X11Application {
     connection: xcb::Connection,
     screen_num: i32,
-    windows: std::collections::HashMap<u32, X11Window>,
-    event_listeners: Vec<Box<dyn Fn(Event) -> ()>>,
+    windows: std::cell::RefCell<std::collections::HashMap<u32, X11Window>>,
+    event_listeners: std::cell::RefCell<Vec<Box<dyn Fn(&X11Application, Event) -> ()>>>,
 }
 
+#[derive(Copy, Clone)]
 pub struct X11Window {
     id: u32,
     foreground: u32,
@@ -31,11 +32,11 @@ impl Application for X11Application {
         return X11Application {
             connection,
             screen_num,
-            windows: std::collections::HashMap::new(),
-            event_listeners: vec![],
+            windows: std::cell::RefCell::new(std::collections::HashMap::new()),
+            event_listeners: std::cell::RefCell::new(vec![]),
         };
     }
-    fn create_window(&mut self, width: u16, height: u16) -> u32 {
+    fn create_window(&self, width: u16, height: u16) -> u32 {
         let setup = self.connection.get_setup();
         let screen = setup.roots().nth(self.screen_num as usize).unwrap();
 
@@ -87,7 +88,7 @@ impl Application for X11Application {
         trace!("Create Window '{}'", window_id);
         xcb::map_window(&self.connection, window_id);
 
-        self.windows.insert(
+        self.windows.borrow_mut().insert(
             window_id,
             X11Window {
                 id: window_id,
@@ -98,7 +99,7 @@ impl Application for X11Application {
 
         return window_id;
     }
-    fn main_loop(&mut self) {
+    fn main_loop(&self) {
         loop {
             let event = self.connection.wait_for_event();
             match event {
@@ -146,20 +147,20 @@ impl Application for X11Application {
             }
         }
     }
-    fn get_window(&mut self, id: u32) -> &X11Window {
-        self.windows.get(&id).unwrap()
+    fn get_window(&self, id: u32) -> X11Window {
+        *self.windows.borrow().get(&id).unwrap()
     }
-    fn flush(&mut self) -> bool {
+    fn flush(&self) -> bool {
         self.connection.flush()
     }
 
-    fn add_event_listener(&mut self, handler: Box<Fn(Event) -> ()>) {
-        self.event_listeners.push(handler)
+    fn add_event_listener(&self, handler: Box<Fn(&Self, Event) -> ()>) {
+        self.event_listeners.borrow_mut().push(handler)
     }
 
-    fn trigger_event(&mut self, event: Event) {
-        for handler in self.event_listeners.iter() {
-            handler(event);
+    fn trigger_event(&self, event: Event) {
+        for handler in self.event_listeners.borrow().iter() {
+            handler(self, event);
         }
     }
 }
