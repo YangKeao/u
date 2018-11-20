@@ -87,13 +87,24 @@ impl Application for X11Application {
         );
         trace!("Create Window '{}'", window_id);
 
+        // These cookies are used for get DELETE_WINDOW event.
+        // See more in ftp://www.x.org/pub/X11R7.7/doc/man/man3/xcb_change_property.3.xhtml
+        // And handle close window example: https://marc.info/?l=freedesktop-xcb&m=129381953404497
         let cookie = xcb::intern_atom(&self.connection, true, "WM_PROTOCOLS");
         let reply = cookie.get_reply().unwrap();
 
         let cookie_for_delete = xcb::intern_atom(&self.connection, true, "WM_DELETE_WINDOW");
         let reply_for_delete = cookie_for_delete.get_reply().unwrap();
 
-        xcb::change_property(&self.connection, xcb::PROP_MODE_REPLACE as u8, window_id, reply.atom(), 4, 32, &[reply_for_delete.atom()]);
+        xcb::change_property(
+            &self.connection,
+            xcb::PROP_MODE_REPLACE as u8,
+            window_id,
+            reply.atom(),
+            4,
+            32,
+            &[reply_for_delete.atom()],
+        );
         xcb::map_window(&self.connection, window_id);
 
         self.windows.borrow_mut().insert(
@@ -150,6 +161,7 @@ impl Application for X11Application {
                             trace!("Event LEAVE_NOTIFY triggered");
                         }
                         xcb::CLIENT_MESSAGE => {
+                            // TODO: Handle several client messages
                             warn!("Handle Client Message");
                         }
                         _ => {
