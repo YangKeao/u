@@ -34,7 +34,12 @@ pub struct EnterNotify {}
 pub struct LeaveNotify {}
 
 #[derive(Copy, Clone)]
-pub enum Event {
+pub struct CloseNotify<WindowIdentifier> {
+    pub window_id: WindowIdentifier
+}
+
+#[derive(Copy, Clone)]
+pub enum Event<WindowIdentifier> {
     Expose(Expose),
     KeyPress(KeyPress),
     KeyRelease(KeyRelease),
@@ -43,6 +48,7 @@ pub enum Event {
     MotionNotify(MotionNotify),
     EnterNotify(EnterNotify),
     LeaveNotify(LeaveNotify),
+    CloseNotify(CloseNotify<WindowIdentifier>),
 }
 
 pub fn init() {
@@ -66,8 +72,9 @@ pub trait Application {
     fn main_loop(&self);
     fn get_window(&self, id: Self::WindowIdentifier) -> Self::Window;
     fn flush(&self) -> bool;
-    fn add_event_listener(&self, handler: Box<Fn(&Self, Event) -> ()>);
-    fn trigger_event(&self, event: Event);
+    fn add_event_listener(&self, handler: Box<Fn(&Self, Event<Self::WindowIdentifier>) -> ()>);
+    fn trigger_event(&self, event: Event<Self::WindowIdentifier>);
+    fn destroy_window(&self, window_id: Self::WindowIdentifier);
 }
 
 pub struct Point {

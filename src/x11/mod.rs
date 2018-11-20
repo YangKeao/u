@@ -8,7 +8,7 @@ pub struct X11Application {
     connection: xcb::Connection,
     screen_num: i32,
     windows: std::cell::RefCell<std::collections::HashMap<u32, X11Window>>,
-    event_listeners: std::cell::RefCell<Vec<Box<dyn Fn(&X11Application, Event) -> ()>>>,
+    event_listeners: std::cell::RefCell<Vec<Box<dyn Fn(&X11Application, Event<u32>) -> ()>>>
 }
 
 #[derive(Copy, Clone)]
@@ -20,6 +20,14 @@ pub struct X11Window {
 impl X11Application {
     fn borrow_connection(&self) -> &xcb::Connection {
         &self.connection
+    }
+}
+
+impl X11Application {
+    fn get_atom(&self, name: &str) -> xcb::Atom {
+        let cookie = xcb::intern_atom(&self.connection, true, name);
+        let reply = cookie.get_reply().unwrap();
+        reply.atom()
     }
 }
 
@@ -90,20 +98,14 @@ impl Application for X11Application {
         // These cookies are used for get DELETE_WINDOW event.
         // See more in ftp://www.x.org/pub/X11R7.7/doc/man/man3/xcb_change_property.3.xhtml
         // And handle close window example: https://marc.info/?l=freedesktop-xcb&m=129381953404497
-        let cookie = xcb::intern_atom(&self.connection, true, "WM_PROTOCOLS");
-        let reply = cookie.get_reply().unwrap();
-
-        let cookie_for_delete = xcb::intern_atom(&self.connection, true, "WM_DELETE_WINDOW");
-        let reply_for_delete = cookie_for_delete.get_reply().unwrap();
-
         xcb::change_property(
             &self.connection,
             xcb::PROP_MODE_REPLACE as u8,
             window_id,
-            reply.atom(),
+            self.get_atom("WM_PROTOCOLS"),
             4,
             32,
-            &[reply_for_delete.atom()],
+            &[self.get_atom("WM_DELETE_WINDOW")],
         );
         xcb::map_window(&self.connection, window_id);
 
@@ -161,8 +163,17 @@ impl Application for X11Application {
                             trace!("Event LEAVE_NOTIFY triggered");
                         }
                         xcb::CLIENT_MESSAGE => {
-                            // TODO: Handle several client messages
-                            warn!("Handle Client Message");
+                            let client_message : &xcb::ClientMessageEvent = unsafe {
+                                xcb::cast_event(&event)
+                            };
+                            if client_message.data().data32()[0] == self.get_atom("WM_DELETE_WINDOW") {
+                                self.trigger_event(Event::CloseNotify(CloseNotify {
+                                    window_id: client_message.window()
+                                }));
+                                trace!("Event CLOSE_NOTIFY triggered");
+                            } else {
+                                trace!("Unhandled Client Message");
+                            }
                         }
                         _ => {
                             warn!("Unhandled Event");
@@ -179,11 +190,16 @@ impl Application for X11Application {
         self.connection.flush()
     }
 
-    fn add_event_listener(&self, handler: Box<Fn(&Self, Event) -> ()>) {
+    fn add_event_listener(&self, handler: Box<Fn(&Self, Event<u32>) -> ()>) {
         self.event_listeners.borrow_mut().push(handler)
     }
-
-    fn trigger_event(&self, event: Event) {
+    fn destroy_window(&self, window_id: u32) {
+        xcb::destroy_window(&self.connection, window_id);
+        self.flush();
+        self.windows.borrow_mut().remove(&window_id);
+        info!("Window {} destroyed", window_id);
+    }
+    fn trigger_event(&self, event: Event<u32>) {
         for handler in self.event_listeners.borrow().iter() {
             handler(self, event);
         }
