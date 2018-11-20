@@ -35,7 +35,7 @@ pub struct LeaveNotify {}
 
 #[derive(Copy, Clone)]
 pub struct CloseNotify<WindowIdentifier> {
-    pub window_id: WindowIdentifier
+    pub window_id: WindowIdentifier,
 }
 
 #[derive(Copy, Clone)]

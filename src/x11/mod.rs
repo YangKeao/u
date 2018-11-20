@@ -8,7 +8,7 @@ pub struct X11Application {
     connection: xcb::Connection,
     screen_num: i32,
     windows: std::cell::RefCell<std::collections::HashMap<u32, X11Window>>,
-    event_listeners: std::cell::RefCell<Vec<Box<dyn Fn(&X11Application, Event<u32>) -> ()>>>
+    event_listeners: std::cell::RefCell<Vec<Box<dyn Fn(&X11Application, Event<u32>) -> ()>>>,
 }
 
 #[derive(Copy, Clone)]
@@ -166,9 +166,11 @@ impl Application for X11Application {
                             let client_message : &xcb::ClientMessageEvent = unsafe {
                                 xcb::cast_event(&event)
                             };
-                            if client_message.data().data32()[0] == self.get_atom("WM_DELETE_WINDOW") {
+                            if client_message.data().data32()[0]
+                                == self.get_atom("WM_DELETE_WINDOW")
+                            {
                                 self.trigger_event(Event::CloseNotify(CloseNotify {
-                                    window_id: client_message.window()
+                                    window_id: client_message.window(),
                                 }));
                                 trace!("Event CLOSE_NOTIFY triggered");
                             } else {
