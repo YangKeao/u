@@ -125,7 +125,7 @@ impl Application for X11Application {
             let event = self.connection.wait_for_event();
             match event {
                 None => {
-                    warn!("None Event received");
+                    warn!("IO Error");
                 }
                 Some(event) => {
                     let r = event.response_type() & !0x80;
