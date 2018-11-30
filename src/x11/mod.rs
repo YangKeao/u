@@ -1,9 +1,9 @@
 extern crate helper_macro;
 extern crate xcb;
 
-use std::sync::Arc;
 use super::*;
 use log::*;
+use std::sync::Arc;
 
 pub struct X11Application {
     connection: Arc<xcb::Connection>,
@@ -118,36 +118,40 @@ impl Application for X11Application {
                             trace!("Event EXPOSE triggered");
                         }
                         xcb::KEY_PRESS => {
-                            let key_press_event : &xcb::KeyPressEvent = unsafe {
-                                xcb::cast_event(&event)
-                            };
+                            let key_press_event: &xcb::KeyPressEvent =
+                                unsafe { xcb::cast_event(&event) };
                             self.trigger_event(Event::KeyPress(KeyPress {
                                 window_id: key_press_event.event(),
                                 cursor_position: Position {
                                     x: key_press_event.event_x(),
                                     y: key_press_event.event_y(),
                                 },
-                                detail: key_press_event.detail()
+                                detail: key_press_event.detail(),
                             }));
-                            trace!("Event KEY_PRESS triggered on WINDOW: {}", key_press_event.event());
+                            trace!(
+                                "Event KEY_PRESS triggered on WINDOW: {}",
+                                key_press_event.event()
+                            );
                         }
                         xcb::KEY_RELEASE => {
                             self.trigger_event(Event::KeyRelease(KeyRelease {}));
                             trace!("Event KEY_RELEASE triggered");
                         }
                         xcb::BUTTON_PRESS => {
-                            let button_press_event : &xcb::ButtonPressEvent = unsafe {
-                                xcb::cast_event(&event)
-                            };
+                            let button_press_event: &xcb::ButtonPressEvent =
+                                unsafe { xcb::cast_event(&event) };
                             self.trigger_event(Event::ButtonPress(ButtonPress {
                                 window_id: button_press_event.event(),
                                 cursor_position: Position {
                                     x: button_press_event.event_x(),
                                     y: button_press_event.event_y(),
                                 },
-                                detail: button_press_event.detail()
+                                detail: button_press_event.detail(),
                             }));
-                            trace!("Event BUTTON_PRESS triggered on WINDOW: {}", button_press_event.event());
+                            trace!(
+                                "Event BUTTON_PRESS triggered on WINDOW: {}",
+                                button_press_event.event()
+                            );
                         }
                         xcb::BUTTON_RELEASE => {
                             self.trigger_event(Event::ButtonRelease(ButtonRelease {}));
@@ -166,10 +170,9 @@ impl Application for X11Application {
                             trace!("Event LEAVE_NOTIFY triggered");
                         }
                         xcb::CLIENT_MESSAGE => {
-                            let client_message : &xcb::ClientMessageEvent = unsafe {
-                                xcb::cast_event(&event)
-                            };
-                            
+                            let client_message: &xcb::ClientMessageEvent =
+                                unsafe { xcb::cast_event(&event) };
+
                             if client_message.data().data32()[0]
                                 == self.get_atom("WM_DELETE_WINDOW")
                             {
@@ -214,30 +217,40 @@ impl Application for X11Application {
 
 impl X11Window {
     fn get_root(&self) -> &X11Application {
-        unsafe {
-            &(*self.root)
-        }
+        unsafe { &(*self.root) }
     }
 }
 impl Window for X11Window {
     fn poly_line(&self, points: &[Position]) {
         let root = self.get_root();
         let connection = root.connection.as_ref();
-        let screen = connection.get_setup().roots().nth(root.screen_num as usize).unwrap();
+        let screen = connection
+            .get_setup()
+            .roots()
+            .nth(root.screen_num as usize)
+            .unwrap();
         let foreground = connection.generate_id();
-        xcb::create_gc(&connection, foreground, screen.root(), &[
+        xcb::create_gc(
+            &connection,
+            foreground,
+            screen.root(),
+            &[
                 (xcb::GC_FOREGROUND, screen.black_pixel()),
                 (xcb::GC_GRAPHICS_EXPOSURES, 0),
-        ]);
+            ],
+        );
 
-        let points: Vec<_> = points.into_iter().map(|p| xcb::Point::new(p.x, p.y)).collect();
+        let points: Vec<_> = points
+            .into_iter()
+            .map(|p| xcb::Point::new(p.x, p.y))
+            .collect();
 
         xcb::poly_line(
             connection,
             xcb::COORD_MODE_ORIGIN as u8,
             self.id,
             foreground,
-            &points
+            &points,
         );
     }
 }

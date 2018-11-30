@@ -1,12 +1,12 @@
 extern crate u;
 
-use u::Application;
-use u::Window;
 use std::sync::Arc;
 use std::sync::RwLock;
+use u::Application;
+use u::Window;
 
 fn main() {
-    let point_list = Arc::new(RwLock::new(vec!()));
+    let point_list = Arc::new(RwLock::new(vec![]));
 
     u::init();
     let application = u::create_application(u::Backend::X11);
@@ -14,22 +14,20 @@ fn main() {
 
     let rp = point_list.clone();
     application.add_event_listener(Box::new(move |application, ev| match ev {
-        u::Event::KeyPress(key_press_event) => {
-            match key_press_event.detail {
-                65 => {
-                    application.get_window(key_press_event.window_id).poly_line(&rp.read().unwrap());
+        u::Event::KeyPress(key_press_event) => match key_press_event.detail {
+            65 => {
+                application
+                    .get_window(key_press_event.window_id)
+                    .poly_line(&rp.read().unwrap());
 
-                    rp.write().unwrap().clear();
-                    application.flush();
-                }
-                54 => {
-                    application.create_window(100, 100);
-                }
-                _ => {
-
-                }
+                rp.write().unwrap().clear();
+                application.flush();
             }
-        }
+            54 => {
+                application.create_window(100, 100);
+            }
+            _ => {}
+        },
         _ => {}
     }));
     application.add_event_listener(Box::new(|application, ev| match ev {
