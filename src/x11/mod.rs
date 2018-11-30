@@ -169,6 +169,7 @@ impl Application for X11Application {
                             let client_message : &xcb::ClientMessageEvent = unsafe {
                                 xcb::cast_event(&event)
                             };
+                            
                             if client_message.data().data32()[0]
                                 == self.get_atom("WM_DELETE_WINDOW")
                             {
@@ -231,7 +232,6 @@ impl Window for X11Window {
 
         let points: Vec<_> = points.into_iter().map(|p| xcb::Point::new(p.x, p.y)).collect();
 
-        println!("Window: {} Foreground: {}", self.id, foreground);
         xcb::poly_line(
             connection,
             xcb::COORD_MODE_ORIGIN as u8,
