@@ -4,6 +4,8 @@ extern crate log;
 
 mod x11;
 
+use std::sync::Arc;
+
 #[derive(Copy, Clone)]
 pub struct Position {
     pub x: i16,
@@ -19,7 +21,11 @@ pub enum Backend {
 pub struct Expose {}
 
 #[derive(Copy, Clone)]
-pub struct KeyPress {}
+pub struct KeyPress<WindowIdentifier> {
+    pub window_id: WindowIdentifier,
+    pub cursor_position: Position,
+    pub detail: u8,
+}
 
 #[derive(Copy, Clone)]
 pub struct KeyRelease {}
@@ -51,7 +57,7 @@ pub struct CloseNotify<WindowIdentifier> {
 #[derive(Copy, Clone)]
 pub enum Event<WindowIdentifier> {
     Expose(Expose),
-    KeyPress(KeyPress),
+    KeyPress(KeyPress<WindowIdentifier>),
     KeyRelease(KeyRelease),
     ButtonPress(ButtonPress<WindowIdentifier>),
     ButtonRelease(ButtonRelease),
@@ -80,19 +86,14 @@ pub trait Application {
     fn new() -> Self;
     fn create_window(&self, width: u16, height: u16) -> Self::WindowIdentifier;
     fn main_loop(&self);
-    fn get_window(&self, id: Self::WindowIdentifier) -> Self::Window;
+    fn get_window(&self, id: Self::WindowIdentifier) -> Arc<Self::Window>;
     fn flush(&self) -> bool;
     fn add_event_listener(&self, handler: Box<Fn(&Self, Event<Self::WindowIdentifier>) -> ()>);
     fn trigger_event(&self, event: Event<Self::WindowIdentifier>);
     fn destroy_window(&self, window_id: Self::WindowIdentifier);
 }
 
-pub struct Point {
-    x: i16,
-    y: i16,
-}
-
 pub trait Window {
     type Application;
-    fn poly_point(&mut self, application: &Self::Application, points: &[Point]);
+    fn poly_point(&self, points: &[Position]);
 }

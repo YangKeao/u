@@ -1,26 +1,21 @@
 extern crate helper_macro;
 extern crate xcb;
 
+use std::sync::Arc;
 use super::*;
 use log::*;
 
 pub struct X11Application {
-    connection: xcb::Connection,
+    connection: Arc<xcb::Connection>,
     screen_num: i32,
-    windows: std::cell::RefCell<std::collections::HashMap<u32, X11Window>>,
+    windows: std::cell::RefCell<std::collections::HashMap<u32, Arc<X11Window>>>,
     event_listeners: std::cell::RefCell<Vec<Box<dyn Fn(&X11Application, Event<u32>) -> ()>>>,
 }
 
-#[derive(Copy, Clone)]
 pub struct X11Window {
     id: u32,
     foreground: u32,
-}
-
-impl X11Application {
-    fn borrow_connection(&self) -> &xcb::Connection {
-        &self.connection
-    }
+    connection: Arc<xcb::Connection>,
 }
 
 impl X11Application {
@@ -38,7 +33,7 @@ impl Application for X11Application {
         let (connection, screen_num) = xcb::Connection::connect(None).unwrap();
 
         return X11Application {
-            connection,
+            connection: Arc::new(connection),
             screen_num,
             windows: std::cell::RefCell::new(std::collections::HashMap::new()),
             event_listeners: std::cell::RefCell::new(vec![]),
@@ -111,10 +106,11 @@ impl Application for X11Application {
 
         self.windows.borrow_mut().insert(
             window_id,
-            X11Window {
+            Arc::new(X11Window {
                 id: window_id,
                 foreground,
-            },
+                connection: self.connection.clone(),
+            }),
         );
         self.connection.flush();
 
@@ -135,7 +131,17 @@ impl Application for X11Application {
                             trace!("Event EXPOSE triggered");
                         }
                         xcb::KEY_PRESS => {
-                            self.trigger_event(Event::KeyPress(KeyPress {}));
+                            let key_press_event : &xcb::KeyPressEvent = unsafe {
+                                xcb::cast_event(&event)
+                            };
+                            self.trigger_event(Event::KeyPress(KeyPress {
+                                window_id: key_press_event.event(),
+                                cursor_position: Position {
+                                    x: key_press_event.event_x(),
+                                    y: key_press_event.event_y(),
+                                },
+                                detail: key_press_event.detail()
+                            }));
                             trace!("Event KEY_PRESS triggered");
                         }
                         xcb::KEY_RELEASE => {
@@ -195,8 +201,8 @@ impl Application for X11Application {
             }
         }
     }
-    fn get_window(&self, id: u32) -> X11Window {
-        *self.windows.borrow().get(&id).unwrap()
+    fn get_window(&self, id: u32) -> Arc<X11Window> {
+        (*self.windows.borrow().get(&id).unwrap()).clone()
     }
     fn flush(&self) -> bool {
         self.connection.flush()
@@ -220,10 +226,10 @@ impl Application for X11Application {
 
 impl Window for X11Window {
     type Application = X11Application;
-    fn poly_point(&mut self, application: &X11Application, points: &[Point]) {
+    fn poly_point(&self, points: &[Position]) {
         for point in points.iter() {
             xcb::poly_point(
-                application.borrow_connection(),
+                self.connection.as_ref(),
                 xcb::COORD_MODE_ORIGIN as u8,
                 self.id,
                 self.foreground,
