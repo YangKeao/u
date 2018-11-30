@@ -4,6 +4,12 @@ extern crate log;
 
 mod x11;
 
+#[derive(Copy, Clone)]
+pub struct Position {
+    pub x: i16,
+    pub y: i16,
+}
+
 pub enum Backend {
     X11,
     WAYLAND,
@@ -19,7 +25,11 @@ pub struct KeyPress {}
 pub struct KeyRelease {}
 
 #[derive(Copy, Clone)]
-pub struct ButtonPress {}
+pub struct ButtonPress<WindowIdentifier> {
+    pub window_id: WindowIdentifier,
+    pub cursor_position: Position,
+    pub detail: u8,
+}
 
 #[derive(Copy, Clone)]
 pub struct ButtonRelease {}
@@ -43,7 +53,7 @@ pub enum Event<WindowIdentifier> {
     Expose(Expose),
     KeyPress(KeyPress),
     KeyRelease(KeyRelease),
-    ButtonPress(ButtonPress),
+    ButtonPress(ButtonPress<WindowIdentifier>),
     ButtonRelease(ButtonRelease),
     MotionNotify(MotionNotify),
     EnterNotify(EnterNotify),

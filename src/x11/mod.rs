@@ -143,7 +143,17 @@ impl Application for X11Application {
                             trace!("Event KEY_RELEASE triggered");
                         }
                         xcb::BUTTON_PRESS => {
-                            self.trigger_event(Event::ButtonPress(ButtonPress {}));
+                            let button_press_event : &xcb::ButtonPressEvent = unsafe {
+                                xcb::cast_event(&event)
+                            };
+                            self.trigger_event(Event::ButtonPress(ButtonPress {
+                                window_id: button_press_event.event(),
+                                cursor_position: Position {
+                                    x: button_press_event.event_x(),
+                                    y: button_press_event.event_y(),
+                                },
+                                detail: button_press_event.detail()
+                            }));
                             trace!("Event BUTTON_PRESS triggered");
                         }
                         xcb::BUTTON_RELEASE => {
