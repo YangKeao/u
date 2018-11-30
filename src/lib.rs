@@ -86,7 +86,7 @@ pub trait Application {
     fn new() -> Self;
     fn create_window(&self, width: u16, height: u16) -> Self::WindowIdentifier;
     fn main_loop(&self);
-    fn get_window(&self, id: Self::WindowIdentifier) -> Arc<Self::Window>;
+    fn get_window(&self, id: Self::WindowIdentifier) -> Arc<Box<Self::Window>>;
     fn flush(&self) -> bool;
     fn add_event_listener(&self, handler: Box<Fn(&Self, Event<Self::WindowIdentifier>) -> ()>);
     fn trigger_event(&self, event: Event<Self::WindowIdentifier>);
@@ -94,6 +94,5 @@ pub trait Application {
 }
 
 pub trait Window {
-    type Application;
-    fn poly_point(&self, points: &[Position]);
+    fn poly_line(&self, points: &[Position]);
 }

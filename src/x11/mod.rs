@@ -8,14 +8,13 @@ use log::*;
 pub struct X11Application {
     connection: Arc<xcb::Connection>,
     screen_num: i32,
-    windows: std::cell::RefCell<std::collections::HashMap<u32, Arc<X11Window>>>,
+    windows: std::cell::RefCell<std::collections::HashMap<u32, Arc<Box<X11Window>>>>,
     event_listeners: std::cell::RefCell<Vec<Box<dyn Fn(&X11Application, Event<u32>) -> ()>>>,
 }
 
 pub struct X11Window {
     id: u32,
-    foreground: u32,
-    connection: Arc<xcb::Connection>,
+    root: *const X11Application,
 }
 
 impl X11Application {
@@ -42,17 +41,6 @@ impl Application for X11Application {
     fn create_window(&self, width: u16, height: u16) -> u32 {
         let setup = self.connection.get_setup();
         let screen = setup.roots().nth(self.screen_num as usize).unwrap();
-
-        let foreground = self.connection.generate_id();
-        xcb::create_gc(
-            &self.connection,
-            foreground,
-            screen.root(),
-            &[
-                (xcb::GC_FOREGROUND, screen.black_pixel()),
-                (xcb::GC_GRAPHICS_EXPOSURES, 0),
-            ],
-        );
 
         let window_id = self.connection.generate_id();
         xcb::create_window(
@@ -88,7 +76,7 @@ impl Application for X11Application {
                 ),
             ],
         );
-        trace!("Create Window '{}'", window_id);
+        info!("Create Window '{}'", window_id);
 
         // These cookies are used for get DELETE_WINDOW event.
         // See more in ftp://www.x.org/pub/X11R7.7/doc/man/man3/xcb_change_property.3.xhtml
@@ -106,11 +94,10 @@ impl Application for X11Application {
 
         self.windows.borrow_mut().insert(
             window_id,
-            Arc::new(X11Window {
+            Arc::new(Box::new(X11Window {
                 id: window_id,
-                foreground,
-                connection: self.connection.clone(),
-            }),
+                root: self,
+            })),
         );
         self.connection.flush();
 
@@ -142,7 +129,7 @@ impl Application for X11Application {
                                 },
                                 detail: key_press_event.detail()
                             }));
-                            trace!("Event KEY_PRESS triggered");
+                            trace!("Event KEY_PRESS triggered on WINDOW: {}", key_press_event.event());
                         }
                         xcb::KEY_RELEASE => {
                             self.trigger_event(Event::KeyRelease(KeyRelease {}));
@@ -160,7 +147,7 @@ impl Application for X11Application {
                                 },
                                 detail: button_press_event.detail()
                             }));
-                            trace!("Event BUTTON_PRESS triggered");
+                            trace!("Event BUTTON_PRESS triggered on WINDOW: {}", button_press_event.event());
                         }
                         xcb::BUTTON_RELEASE => {
                             self.trigger_event(Event::ButtonRelease(ButtonRelease {}));
@@ -201,7 +188,7 @@ impl Application for X11Application {
             }
         }
     }
-    fn get_window(&self, id: u32) -> Arc<X11Window> {
+    fn get_window(&self, id: u32) -> Arc<Box<X11Window>> {
         (*self.windows.borrow().get(&id).unwrap()).clone()
     }
     fn flush(&self) -> bool {
@@ -224,17 +211,33 @@ impl Application for X11Application {
     }
 }
 
-impl Window for X11Window {
-    type Application = X11Application;
-    fn poly_point(&self, points: &[Position]) {
-        for point in points.iter() {
-            xcb::poly_point(
-                self.connection.as_ref(),
-                xcb::COORD_MODE_ORIGIN as u8,
-                self.id,
-                self.foreground,
-                &[xcb::Point::new(point.x, point.y)],
-            );
+impl X11Window {
+    fn get_root(&self) -> &X11Application {
+        unsafe {
+            &(*self.root)
         }
+    }
+}
+impl Window for X11Window {
+    fn poly_line(&self, points: &[Position]) {
+        let root = self.get_root();
+        let connection = root.connection.as_ref();
+        let screen = connection.get_setup().roots().nth(root.screen_num as usize).unwrap();
+        let foreground = connection.generate_id();
+        xcb::create_gc(&connection, foreground, screen.root(), &[
+                (xcb::GC_FOREGROUND, screen.black_pixel()),
+                (xcb::GC_GRAPHICS_EXPOSURES, 0),
+        ]);
+
+        let points: Vec<_> = points.into_iter().map(|p| xcb::Point::new(p.x, p.y)).collect();
+
+        println!("Window: {} Foreground: {}", self.id, foreground);
+        xcb::poly_line(
+            connection,
+            xcb::COORD_MODE_ORIGIN as u8,
+            self.id,
+            foreground,
+            &points
+        );
     }
 }
