@@ -2,8 +2,8 @@ use super::*;
 use cairo::prelude::SurfaceExt;
 use cairo::XCBSurface;
 use log::*;
-use std::sync::Arc;
 use pango::prelude::*;
+use std::sync::Arc;
 
 pub struct X11Application {
     connection: Arc<xcb::Connection>,
@@ -38,7 +38,7 @@ impl Application for X11Application {
             screen_num,
             windows: std::cell::RefCell::new(std::collections::HashMap::new()),
             event_listeners: std::cell::RefCell::new(vec![]),
-            should_quit: std::cell::Cell::new(false)
+            should_quit: std::cell::Cell::new(false),
         };
         app
     }
@@ -292,7 +292,14 @@ impl Window for X11Window {
             context.fill();
         }
     }
-    fn draw_text(&self, position: Position, color: Color, font_size: i32, font_family: &str, content: &str) {
+    fn draw_text(
+        &self,
+        position: Position,
+        color: Color,
+        font_size: i32,
+        font_family: &str,
+        content: &str,
+    ) {
         let cr_ctx = cairo::Context::new(&self.cairo_surface);
         let pc_layout = pangocairo::functions::create_layout(&cr_ctx).unwrap();
 

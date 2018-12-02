@@ -103,6 +103,13 @@ pub trait Application {
 
 pub trait Window {
     fn polygon(&self, points: &[Position], color: Color);
-    fn draw_text(&self, position: Position, color: Color, font_size: i32, font_family: &str, content: &str);
+    fn draw_text(
+        &self,
+        position: Position,
+        color: Color,
+        font_size: i32,
+        font_family: &str,
+        content: &str,
+    );
     fn flush(&self);
 }

@@ -49,11 +49,17 @@ fn main() {
             p.write().unwrap().push(button_press_event.cursor_position);
 
             let window = application.get_window(button_press_event.window_id);
-            window.draw_text(button_press_event.cursor_position, u::Color {
-                r: 1.0,
-                g: 0.0,
-                b: 0.0,
-            }, 50, "Noto Sans CJK SC", "你好，世界");
+            window.draw_text(
+                button_press_event.cursor_position,
+                u::Color {
+                    r: 1.0,
+                    g: 0.0,
+                    b: 0.0,
+                },
+                50,
+                "Noto Sans CJK SC",
+                "你好，世界",
+            );
             window.flush();
         }
         _ => {}
