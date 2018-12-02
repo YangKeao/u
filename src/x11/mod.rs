@@ -10,6 +10,7 @@ pub struct X11Application {
     screen_num: i32,
     windows: std::cell::RefCell<std::collections::HashMap<u32, Arc<Box<X11Window>>>>,
     event_listeners: std::cell::RefCell<Vec<Box<dyn Fn(&X11Application, Event<u32>) -> ()>>>,
+    should_quit: std::cell::Cell<bool>,
 }
 
 pub struct X11Window {
@@ -37,6 +38,7 @@ impl Application for X11Application {
             screen_num,
             windows: std::cell::RefCell::new(std::collections::HashMap::new()),
             event_listeners: std::cell::RefCell::new(vec![]),
+            should_quit: std::cell::Cell::new(false)
         };
         app
     }
@@ -237,10 +239,20 @@ impl Application for X11Application {
                     }
                 }
             }
+
+            if self.should_quit.get() {
+                break;
+            }
         }
     }
     fn get_window(&self, id: u32) -> Arc<Box<X11Window>> {
         (*self.windows.borrow().get(&id).unwrap()).clone()
+    }
+    fn windows_len(&self) -> usize {
+        self.windows.borrow().len()
+    }
+    fn set_should_quit(&self, should_quit: bool) {
+        self.should_quit.set(should_quit);
     }
     fn flush(&self) -> bool {
         self.connection.flush()

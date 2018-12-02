@@ -90,6 +90,8 @@ pub trait Application {
     fn create_window(&self, width: u16, height: u16) -> Self::WindowIdentifier;
     fn main_loop(&self);
     fn get_window(&self, id: Self::WindowIdentifier) -> Arc<Box<Self::Window>>;
+    fn windows_len(&self) -> usize;
+    fn set_should_quit(&self, should_quit: bool);
     fn flush(&self) -> bool;
     fn add_event_listener(&self, handler: Box<Fn(&Self, Event<Self::WindowIdentifier>) -> ()>);
     fn trigger_event(&self, event: Event<Self::WindowIdentifier>);

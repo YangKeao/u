@@ -53,8 +53,17 @@ fn main() {
                 r: 1.0,
                 g: 0.0,
                 b: 0.0,
-            }, 50, "serif", "Hello World");
+            }, 50, "Noto Sans CJK SC", "你好，世界");
             window.flush();
+        }
+        _ => {}
+    }));
+
+    application.add_event_listener(Box::new(move |application, ev| match ev {
+        u::Event::CloseNotify(close_notification) => {
+            if application.windows_len() == 0 {
+                application.set_should_quit(true);
+            }
         }
         _ => {}
     }));
