@@ -62,7 +62,7 @@ fn main() {
     application.add_event_listener(Box::new(move |application, ev| match ev {
         u::Event::CloseNotify(close_notification) => {
             if application.windows_len() == 0 {
-                application.set_should_quit(true);
+                application.quit();
             }
         }
         _ => {}

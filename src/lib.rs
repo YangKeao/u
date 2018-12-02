@@ -91,6 +91,9 @@ pub trait Application {
     fn main_loop(&self);
     fn get_window(&self, id: Self::WindowIdentifier) -> Arc<Box<Self::Window>>;
     fn windows_len(&self) -> usize;
+    fn quit(&self) {
+        self.set_should_quit(true);
+    }
     fn set_should_quit(&self, should_quit: bool);
     fn flush(&self) -> bool;
     fn add_event_listener(&self, handler: Box<Fn(&Self, Event<Self::WindowIdentifier>) -> ()>);
