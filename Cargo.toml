@@ -8,6 +8,8 @@ edition = "2018"
 xcb = "0.8"
 log = "0.4"
 env_logger = "0.6.0"
+pango = "0.5.0"
+pangocairo = "0.6.0"
 
 [dependencies.cairo-rs]
 version = "0.5.0"

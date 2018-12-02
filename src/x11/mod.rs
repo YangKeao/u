@@ -1,6 +1,6 @@
 use super::*;
-use cairo::XCBSurface;
 use cairo::prelude::SurfaceExt;
+use cairo::XCBSurface;
 use log::*;
 use std::sync::Arc;
 
@@ -31,12 +31,13 @@ impl Application for X11Application {
     fn new() -> Self {
         let (connection, screen_num) = xcb::Connection::connect(None).unwrap();
 
-        return X11Application {
+        let app = X11Application {
             connection: Arc::new(connection),
             screen_num,
             windows: std::cell::RefCell::new(std::collections::HashMap::new()),
             event_listeners: std::cell::RefCell::new(vec![]),
         };
+        app
     }
     fn create_window(&self, width: u16, height: u16) -> u32 {
         let setup = self.connection.get_setup();
@@ -266,7 +267,7 @@ impl X11Window {
 }
 
 impl Window for X11Window {
-    fn poly_pologon(&self, points: &[Position], color: Color) {
+    fn polygon(&self, points: &[Position], color: Color) {
         if points.len() >= 2 {
             let context = cairo::Context::new(&self.cairo_surface);
             context.set_source_rgb(color.r, color.g, color.b);
