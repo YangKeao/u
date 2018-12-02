@@ -260,16 +260,16 @@ impl Application for X11Application {
     fn add_event_listener(&self, handler: Box<Fn(&Self, Event<u32>) -> ()>) {
         self.event_listeners.borrow_mut().push(handler)
     }
+    fn trigger_event(&self, event: Event<u32>) {
+        for handler in self.event_listeners.borrow().iter() {
+            handler(self, event);
+        }
+    }
     fn destroy_window(&self, window_id: u32) {
         xcb::destroy_window(&self.connection, window_id);
         self.flush();
         self.windows.borrow_mut().remove(&window_id);
         info!("Window {} destroyed", window_id);
-    }
-    fn trigger_event(&self, event: Event<u32>) {
-        for handler in self.event_listeners.borrow().iter() {
-            handler(self, event);
-        }
     }
 }
 
