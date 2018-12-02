@@ -1,7 +1,6 @@
-extern crate helper_macro;
-extern crate xcb;
-
 use super::*;
+use cairo::XCBSurface;
+use cairo::prelude::SurfaceExt;
 use log::*;
 use std::sync::Arc;
 
@@ -15,6 +14,7 @@ pub struct X11Application {
 pub struct X11Window {
     id: u32,
     root: *const X11Application,
+    cairo_surface: cairo::Surface,
 }
 
 impl X11Application {
@@ -91,16 +91,51 @@ impl Application for X11Application {
             &[self.get_atom("WM_DELETE_WINDOW")],
         );
         xcb::map_window(&self.connection, window_id);
+        self.connection.flush();
 
         self.windows.borrow_mut().insert(
             window_id,
             Arc::new(Box::new(X11Window {
                 id: window_id,
                 root: self,
+                cairo_surface: {
+                    cairo::Surface::create(
+                        unsafe {
+                            &cairo::XCBConnection::from_raw_full(
+                                self.connection.get_raw_conn() as *mut cairo_sys::xcb_connection_t
+                            )
+                        },
+                        &cairo::XCBDrawable(window_id),
+                        &{
+                            let mut visual_type = None;
+                            'out: for i in setup.roots() {
+                                let depth_iter = i.allowed_depths();
+                                for j in depth_iter {
+                                    let visuals = j.visuals();
+                                    for mut v in visuals {
+                                        if screen.root_visual() == v.visual_id() {
+                                            visual_type = Some(unsafe {
+                                                cairo::XCBVisualType::from_raw_full({
+                                                    let visual_ptr = (&mut v.base)
+                                                        as *mut xcb::ffi::xcb_visualtype_t;
+                                                    visual_ptr as *mut cairo_sys::xcb_visualtype_t
+                                                })
+                                            });
+                                            break 'out;
+                                        }
+                                    }
+                                }
+                            }
+                            visual_type.unwrap()
+                        },
+                        width as i32,
+                        height as i32,
+                    )
+                },
             })),
         );
-        self.connection.flush();
 
+        self.connection.flush();
         return window_id;
     }
     fn main_loop(&self) {
@@ -184,6 +219,16 @@ impl Application for X11Application {
                                 trace!("Unhandled Client Message");
                             }
                         }
+                        0 => {
+                            let error_message: &xcb::GenericError =
+                                unsafe { xcb::cast_event(&event) };
+                            warn!(
+                                "XCB Error Code: {}, Major Code: {}, Minor Code: {}",
+                                error_message.error_code(),
+                                unsafe { (*error_message.ptr).major_code },
+                                unsafe { (*error_message.ptr).minor_code }
+                            );
+                        }
                         _ => {
                             warn!("Unhandled Event");
                         }
@@ -198,7 +243,6 @@ impl Application for X11Application {
     fn flush(&self) -> bool {
         self.connection.flush()
     }
-
     fn add_event_listener(&self, handler: Box<Fn(&Self, Event<u32>) -> ()>) {
         self.event_listeners.borrow_mut().push(handler)
     }
@@ -220,37 +264,22 @@ impl X11Window {
         unsafe { &(*self.root) }
     }
 }
+
 impl Window for X11Window {
-    fn poly_line(&self, points: &[Position]) {
-        let root = self.get_root();
-        let connection = root.connection.as_ref();
-        let screen = connection
-            .get_setup()
-            .roots()
-            .nth(root.screen_num as usize)
-            .unwrap();
-        let foreground = connection.generate_id();
-        xcb::create_gc(
-            &connection,
-            foreground,
-            screen.root(),
-            &[
-                (xcb::GC_FOREGROUND, screen.black_pixel()),
-                (xcb::GC_GRAPHICS_EXPOSURES, 0),
-            ],
-        );
-
-        let points: Vec<_> = points
-            .into_iter()
-            .map(|p| xcb::Point::new(p.x, p.y))
-            .collect();
-
-        xcb::poly_line(
-            connection,
-            xcb::COORD_MODE_ORIGIN as u8,
-            self.id,
-            foreground,
-            &points,
-        );
+    fn poly_pologon(&self, points: &[Position], color: Color) {
+        if points.len() >= 2 {
+            let context = cairo::Context::new(&self.cairo_surface);
+            context.set_source_rgb(color.r, color.g, color.b);
+            context.move_to(points[0].x as f64, points[0].y as f64);
+            for i in 1..(points.len()) {
+                context.line_to(points[i].x as f64, points[i].y as f64);
+            }
+            context.close_path();
+            context.fill();
+        }
+    }
+    fn flush(&self) {
+        self.cairo_surface.flush();
+        self.get_root().flush();
     }
 }

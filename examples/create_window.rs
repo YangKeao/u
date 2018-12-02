@@ -16,12 +16,12 @@ fn main() {
     application.add_event_listener(Box::new(move |application, ev| match ev {
         u::Event::KeyPress(key_press_event) => match key_press_event.detail {
             65 => {
-                application
-                    .get_window(key_press_event.window_id)
-                    .poly_line(&rp.read().unwrap());
+                let window = application
+                    .get_window(key_press_event.window_id);
+                window.poly_pologon(&rp.read().unwrap(), u::Color {r: 1.0, g: 0.0, b:0.0});
 
                 rp.write().unwrap().clear();
-                application.flush();
+                window.flush();
             }
             54 => {
                 application.create_window(100, 100);

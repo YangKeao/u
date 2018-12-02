@@ -3,8 +3,13 @@ extern crate env_logger;
 extern crate log;
 
 mod x11;
-
 use std::sync::Arc;
+
+pub struct Color {
+    pub r: f64,
+    pub g: f64,
+    pub b: f64
+}
 
 #[derive(Copy, Clone)]
 pub struct Position {
@@ -94,5 +99,6 @@ pub trait Application {
 }
 
 pub trait Window {
-    fn poly_line(&self, points: &[Position]);
+    fn poly_pologon(&self, points: &[Position], color: Color);
+    fn flush(&self);
 }
