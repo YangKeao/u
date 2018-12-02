@@ -44,9 +44,17 @@ fn main() {
     }));
 
     let p = point_list.clone();
-    application.add_event_listener(Box::new(move |_application, ev| match ev {
+    application.add_event_listener(Box::new(move |application, ev| match ev {
         u::Event::ButtonPress(button_press_event) => {
             p.write().unwrap().push(button_press_event.cursor_position);
+
+            let window = application.get_window(button_press_event.window_id);
+            window.draw_text(button_press_event.cursor_position, u::Color {
+                r: 1.0,
+                g: 0.0,
+                b: 0.0,
+            }, 50, "serif", "Hello World");
+            window.flush();
         }
         _ => {}
     }));

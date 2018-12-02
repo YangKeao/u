@@ -3,6 +3,7 @@ use cairo::prelude::SurfaceExt;
 use cairo::XCBSurface;
 use log::*;
 use std::sync::Arc;
+use pango::prelude::*;
 
 pub struct X11Application {
     connection: Arc<xcb::Connection>,
@@ -278,6 +279,21 @@ impl Window for X11Window {
             context.close_path();
             context.fill();
         }
+    }
+    fn draw_text(&self, position: Position, color: Color, font_size: i32, font_family: &str, content: &str) {
+        let cr_ctx = cairo::Context::new(&self.cairo_surface);
+        let pc_layout = pangocairo::functions::create_layout(&cr_ctx).unwrap();
+
+        pc_layout.set_text(content);
+        let mut font_description = pango::FontDescription::new();
+        font_description.set_absolute_size((pango::SCALE * font_size) as f64);
+        font_description.set_weight(pango::Weight::Bold);
+        font_description.set_family(font_family);
+        pc_layout.set_font_description(Some(&font_description));
+
+        cr_ctx.set_source_rgb(color.r, color.g, color.b);
+        cr_ctx.move_to(position.x as f64, position.y as f64);
+        pangocairo::functions::show_layout(&cr_ctx, &pc_layout);
     }
     fn flush(&self) {
         self.cairo_surface.flush();

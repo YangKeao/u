@@ -2,6 +2,7 @@
 mod x11;
 use std::sync::Arc;
 
+#[derive(Copy, Clone)]
 pub struct Color {
     pub r: f64,
     pub g: f64,
@@ -97,5 +98,6 @@ pub trait Application {
 
 pub trait Window {
     fn polygon(&self, points: &[Position], color: Color);
+    fn draw_text(&self, position: Position, color: Color, font_size: i32, font_family: &str, content: &str);
     fn flush(&self);
 }
